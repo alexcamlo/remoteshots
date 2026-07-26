@@ -1,0 +1,44 @@
+[Unit]
+Description=RemoteShots private screenshot upload page
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/remoteshots/environment
+ExecStart=/usr/bin/python %h/.local/lib/remoteshots/server.py --bind ${REMOTESHOTS_BIND} --port ${REMOTESHOTS_PORT} --output-dir %h/screenshots
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+WorkingDirectory=%h/screenshots
+UMask=0077
+TasksMax=16
+LimitNOFILE=128
+MemoryHigh=320M
+MemoryMax=384M
+
+# Service hardening
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=%h/screenshots
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+SocketBindDeny=any
+SocketBindAllow=tcp:8484
+
+[Install]
+WantedBy=default.target

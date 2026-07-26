@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local configuration and secrets
+.env
+.env.*
+*.env
+!*.env.example
+*.key
+*.pem
+*.p12
+*.token
+credentials*
+
+# Runtime uploads
+screenshots/
+latest.png
+
+# OS/editor files
+.DS_Store
+*.swp
+*~
