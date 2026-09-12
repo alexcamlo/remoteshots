@@ -1,0 +1,6 @@
+[Unit]
+Description=Clean expired RemoteShots uploads
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemd-tmpfiles --user --clean

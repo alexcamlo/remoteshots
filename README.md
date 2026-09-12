@@ -47,13 +47,12 @@ ip -brief address
 Create the output directory and start the server, replacing the example address:
 
 ```bash
-mkdir -p ~/screenshots
-chmod 700 ~/screenshots
+install -d -m700 /tmp/remoteshots
 
 ./server.py \
   --bind 192.168.1.50 \
   --port 8484 \
-  --output-dir ~/screenshots
+  --output-dir /tmp/remoteshots
 ```
 
 Open:
@@ -64,9 +63,13 @@ http://192.168.1.50:8484/
 
 The server rejects wildcard, loopback, and public bind addresses.
 
+## Upload retention
+
+Uploads are written to `/tmp/remoteshots`. They are removed on reboot, and the enabled cleanup timer deletes files older than 30 days daily.
+
 ## Install the systemd user service
 
-Install the application and unit:
+Install the application, service, and daily cleanup timer:
 
 ```bash
 install -Dm755 server.py \
@@ -78,8 +81,7 @@ install -Dm644 remoteshots.service \
 install -Dm600 remoteshots.env.example \
   ~/.config/remoteshots/environment
 
-mkdir -p ~/screenshots
-chmod 700 ~/screenshots
+install -d -m700 /tmp/remoteshots
 ```
 
 Edit the environment file and set an address assigned to the machine:
@@ -99,7 +101,7 @@ Enable the service:
 
 ```bash
 systemctl --user daemon-reload
-systemctl --user enable --now remoteshots.service
+systemctl --user enable --now remoteshots.service remoteshots-cleanup.timer
 ```
 
 Check whether the user manager persists without an interactive login:
