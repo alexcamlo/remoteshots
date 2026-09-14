@@ -59,11 +59,13 @@ h1 { margin: 0; font-size: 2rem; line-height: 38px; letter-spacing: -.035em; }
 .formats { color: #5e5e59; font-size: .8125rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .drop .actions { margin-left: auto; }
-button, .button { width: 100%; appearance: none; min-height: 44px; padding: .75rem 1.125rem; border: 1px solid #111; border-radius: .25rem; background: #111; color: #fff; font: inherit; font-size: .875rem; font-weight: 650; cursor: pointer; text-align: center; }
+button, .button {  appearance: none; min-height: 44px; padding: .75rem 1.125rem; border: 1px solid #111; border-radius: .25rem; background: #111; color: #fff; font: inherit; font-size: .875rem; font-weight: 650; cursor: pointer; text-align: center; }
 button.secondary, .button.secondary { background: #fff; color: #111; }
 button:focus-visible, .button:focus-visible, .drop:focus-visible { outline: 3px solid #247a4a; outline-offset: 3px; }
 button:disabled { opacity: .4; cursor: wait; }
+button.btn--full { width: 100%; }
 input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.image__wrapper { width: 100%; display: flex; justify-content: center; }
 #preview { display: none; max-width: 100%; max-height: 40vh; margin-top: 1.25rem; border-radius: .25rem; object-fit: contain; }
 #uploadActions { justify-content: flex-end; margin-top: .75rem; }
 #status { min-height: 1.5rem; margin: .75rem 0 0; font-weight: 650; line-height: 1.5; }
@@ -104,8 +106,10 @@ footer { color: #5e5e59; font-size: .75rem; text-align: center; }
 </div>
 <input id="picker" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/avif">
 </section>
+<div class="image__wrapper">
 <img id="preview" alt="Selected image preview">
-<div id="uploadActions" class="actions"><button id="upload" type="button" disabled>Upload</button></div>
+</div>
+<div id="uploadActions" class="actions" hidden><button id="upload" class="btn--full" type="button" disabled>Upload</button></div>
 <p id="status" aria-live="polite"></p>
 <div id="saved">
 <label for="savedPath">Local path</label>
@@ -120,6 +124,7 @@ footer { color: #5e5e59; font-size: .75rem; text-align: center; }
 const maxBytes = 25 * 1024 * 1024;
 const drop = document.querySelector('#drop');
 const picker = document.querySelector('#picker');
+const uploadActions = document.querySelector('#uploadActions');
 const upload = document.querySelector('#upload');
 const status = document.querySelector('#status');
 const nameEl = document.querySelector('#name');
@@ -137,6 +142,7 @@ function setStatus(message, kind = '') {
 function clearSelection() {
   selected = null;
   saved.classList.remove('visible');
+  uploadActions.hidden = true;
   upload.disabled = true;
   nameEl.textContent = 'Drop an image here';
   preview.removeAttribute('src');
@@ -156,13 +162,13 @@ function selectFile(file) {
   }
   selected = file;
   saved.classList.remove('visible');
+  uploadActions.hidden = false;
   nameEl.textContent = `${file.name} (${(file.size / 1048576).toFixed(2)} MiB)`;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(file);
   preview.src = previewUrl;
   preview.style.display = 'block';
   upload.disabled = false;
-  setStatus('Ready to upload.');
 }
 picker.addEventListener('change', () => selectFile(picker.files[0]));
 drop.addEventListener('click', event => { if (!event.target.closest('label')) picker.click(); });
@@ -229,6 +235,7 @@ upload.addEventListener('click', async () => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `Upload failed (${response.status})`);
     savedPath.value = result.original;
+    uploadActions.hidden = true;
     saved.classList.add('visible');
     setStatus(`Saved ${result.filename}`, 'success');
   } catch (error) {
