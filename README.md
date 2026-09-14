@@ -1,5 +1,7 @@
 # RemoteShots
 
+![RemoteShots logo](assets/remoteshots-logo.png)
+
 RemoteShots is a small, dependency-free screenshot upload page for trusted LAN or VPN use.
 
 It provides a mobile-friendly browser interface with camera/photo selection, desktop drag-and-drop, and clipboard image paste. Timestamped originals are retained while a stable `latest.png` is updated atomically.
@@ -113,6 +115,20 @@ Check whether the user manager persists without an interactive login:
 ```bash
 loginctl show-user "$USER" -p Linger
 ```
+
+### Deploying small changes
+
+After changing `server.py`, run this from the repository checkout:
+
+```bash
+./deploy.sh
+```
+
+The deployment command compile-checks `server.py`, installs only that file to
+`~/.local/lib/remoteshots/server.py`, restarts `remoteshots.service`, waits for
+it to become active, and checks the configured private HTTP listener. It does
+not overwrite the environment file or systemd units. If deployment fails, it
+prints recent service journal entries.
 
 If lingering is disabled, enabling it requires administrator access:
 
