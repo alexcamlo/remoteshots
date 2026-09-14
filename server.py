@@ -66,16 +66,25 @@ button:disabled { opacity: .4; cursor: wait; }
 button.btn--full { width: 100%; }
 input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .image__wrapper { width: 100%; display: flex; justify-content: center; }
-#preview { display: none; max-width: 100%; max-height: 40vh; margin-top: 1.25rem; border-radius: .25rem; object-fit: contain; }
-#uploadActions { justify-content: flex-end; margin-top: .75rem; }
+#preview { display: none; max-width: 100%; max-height: 40vh; margin-top: 1.25rem; border-radius: .25rem; object-fit: contain; transform-origin: center; }
+@keyframes preview-suck {
+  0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); filter: blur(0); }
+  100% { opacity: 0; transform: translate3d(var(--suck-x), var(--suck-y), 0) scale(.06) rotate(8deg); filter: blur(2px); }
+}
+#preview.preview--sucking { animation: preview-suck 650ms cubic-bezier(.22, .61, .36, 1) forwards; pointer-events: none; }
+#uploadActions { flex-direction: column; align-items: stretch; margin-top: .75rem; }
 #status { min-height: 1.5rem; margin: .75rem 0 0; font-weight: 650; line-height: 1.5; }
 #saved { display: none; margin-top: 1rem; }
+#uploadActions > #saved { margin-top: 0; width: 100%; }
 #saved.visible { display: block; }
 #saved > label { display: block; margin-bottom: .4rem; font-size: .875rem; font-weight: 650; }
 .path { display: flex; gap: .5rem; align-items: center; }
 #savedPath { flex: 1; min-width: 0; min-height: 44px; padding: .75rem; border: 1px solid #a8a8a3; border-radius: .25rem; background: #fff; color: #111; font: inherit; }
 .success { color: #247a4a; } .error { color: #a51d2d; }
 footer { color: #5e5e59; font-size: .75rem; text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  #preview.preview--sucking { animation: none; }
+}
 @media (max-width: 40rem) {
   body { padding-top: max(1.25rem, env(safe-area-inset-top)); }
   .online { font-size: .75rem; }
@@ -109,8 +118,8 @@ footer { color: #5e5e59; font-size: .75rem; text-align: center; }
 <div class="image__wrapper">
 <img id="preview" alt="Selected image preview">
 </div>
-<div id="uploadActions" class="actions" hidden><button id="upload" class="btn--full" type="button" disabled>Upload</button></div>
-<p id="status" aria-live="polite"></p>
+<div id="uploadActions" class="actions" hidden>
+<button id="upload" class="btn--full" type="button" disabled>Upload</button>
 <div id="saved">
 <label for="savedPath">Local path</label>
 <div class="path">
@@ -118,6 +127,8 @@ footer { color: #5e5e59; font-size: .75rem; text-align: center; }
 <button id="copyPath" type="button">Copy</button>
 </div>
 </div>
+</div>
+<p id="status" aria-live="polite"></p>
 </main>
 <footer>Maximum size 25 MiB · Stored with private permissions</footer>
 <script>
@@ -134,14 +145,19 @@ const savedPath = document.querySelector('#savedPath');
 const copyPath = document.querySelector('#copyPath');
 let selected = null;
 let previewUrl = null;
+let selectionToken = 0;
+let cancelPreviewAnimation = null;
 
 function setStatus(message, kind = '') {
   status.textContent = message;
   status.className = kind;
 }
 function clearSelection() {
+  selectionToken += 1;
+  if (cancelPreviewAnimation) cancelPreviewAnimation();
   selected = null;
   saved.classList.remove('visible');
+  upload.hidden = false;
   uploadActions.hidden = true;
   upload.disabled = true;
   nameEl.textContent = 'Drop an image here';
@@ -160,8 +176,11 @@ function selectFile(file) {
     clearSelection();
     setStatus('Please select an image file.', 'error'); return;
   }
+  if (cancelPreviewAnimation) cancelPreviewAnimation();
+  selectionToken += 1;
   selected = file;
   saved.classList.remove('visible');
+  upload.hidden = false;
   uploadActions.hidden = false;
   nameEl.textContent = `${file.name} (${(file.size / 1048576).toFixed(2)} MiB)`;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -169,6 +188,40 @@ function selectFile(file) {
   preview.src = previewUrl;
   preview.style.display = 'block';
   upload.disabled = false;
+}
+function suckPreviewIntoUpload() {
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) return Promise.resolve();
+  const imageRect = preview.getBoundingClientRect();
+  const buttonRect = upload.getBoundingClientRect();
+  if (!imageRect.width || !imageRect.height || !buttonRect.width || !buttonRect.height) return Promise.resolve();
+  const imageCenterX = imageRect.left + imageRect.width / 2;
+  const imageCenterY = imageRect.top + imageRect.height / 2;
+  const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+  const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+  const suckX = buttonCenterX - imageCenterX;
+  const suckY = buttonCenterY - imageCenterY;
+  return new Promise(resolve => {
+    let settled = false;
+    let timeoutId;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      preview.removeEventListener('animationend', finish);
+      preview.classList.remove('preview--sucking');
+      preview.style.removeProperty('--suck-x');
+      preview.style.removeProperty('--suck-y');
+      if (cancelPreviewAnimation === finish) cancelPreviewAnimation = null;
+      resolve();
+    };
+    cancelPreviewAnimation = finish;
+    preview.style.setProperty('--suck-x', `${suckX}px`);
+    preview.style.setProperty('--suck-y', `${suckY}px`);
+    preview.addEventListener('animationend', finish);
+    preview.classList.add('preview--sucking');
+    timeoutId = setTimeout(finish, 800);
+  });
 }
 picker.addEventListener('change', () => selectFile(picker.files[0]));
 drop.addEventListener('click', event => { if (!event.target.closest('label')) picker.click(); });
@@ -223,19 +276,25 @@ async function imageToPng(file) {
 
 upload.addEventListener('click', async () => {
   if (!selected) return;
+  const file = selected;
+  const token = selectionToken;
   upload.disabled = true;
   setStatus('Preparing image…');
   try {
-    const latest = await imageToPng(selected);
+    const latest = await imageToPng(file);
     const form = new FormData();
-    form.append('original', selected, selected.name);
+    form.append('original', file, file.name);
     form.append('latest', latest, 'latest.png');
     setStatus('Uploading…');
     const response = await fetch('upload', {method: 'POST', body: form, credentials: 'same-origin'});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `Upload failed (${response.status})`);
+    if (token !== selectionToken || selected !== file) return;
     savedPath.value = result.original;
-    uploadActions.hidden = true;
+    await suckPreviewIntoUpload();
+    if (token !== selectionToken || selected !== file) return;
+    preview.style.display = 'none';
+    upload.hidden = true;
     saved.classList.add('visible');
     setStatus(`Saved ${result.filename}`, 'success');
   } catch (error) {
