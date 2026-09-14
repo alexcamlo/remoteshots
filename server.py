@@ -38,48 +38,74 @@ PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<title>Private screenshot upload</title>
+<meta name="color-scheme" content="light">
+<title>RemoteShots</title>
 <style>
-:root { font-family: system-ui, -apple-system, sans-serif; color-scheme: light dark; }
+:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; color: #111; background: #fff; }
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)); background: #111827; color: #f9fafb; }
-main { width: min(100%, 44rem); }
-h1 { margin: 0 0 .4rem; font-size: clamp(1.5rem, 5vw, 2.3rem); }
-p { color: #cbd5e1; line-height: 1.5; }
-.drop { border: 2px dashed #64748b; border-radius: 1rem; padding: clamp(1.25rem, 6vw, 3rem); text-align: center; background: #1f2937; transition: .15s ease; }
-.drop.active { border-color: #38bdf8; background: #0c4a6e; transform: scale(1.01); }
-.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 1rem; }
-button, .button { appearance: none; border: 0; border-radius: .7rem; padding: .8rem 1rem; min-height: 44px; font: inherit; font-weight: 700; cursor: pointer; background: #0284c7; color: white; }
-button.secondary, .button.secondary { background: #475569; }
-button:disabled { opacity: .5; cursor: wait; }
-input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-#preview { display: none; max-width: 100%; max-height: 45vh; margin: 1rem auto 0; border-radius: .7rem; object-fit: contain; }
+body { margin: 0; min-height: 100vh; padding: max(2rem, env(safe-area-inset-top)) clamp(1.25rem, 4vw, 3rem) max(2rem, env(safe-area-inset-bottom)); display: flex; flex-direction: column; background: #fff; }
+header { display: flex; align-items: center; justify-content: space-between; font-size: .875rem; }
+.brand { font-weight: 700; letter-spacing: -.02em; }
+.online { display: flex; align-items: center; gap: .5rem; color: #5e5e59; }
+.online::before { width: .5rem; height: .5rem; border-radius: 50%; background: #247a4a; content: ""; }
+main { width: min(100%, 640px); margin: auto; padding: 5rem 0; }
+h1 { margin: 0; font-size: 2rem; line-height: 38px; letter-spacing: -.035em; }
+.intro { margin: .625rem 0 1.875rem; color: #5e5e59; font-size: .9375rem; line-height: 23px; }
+.drop { min-height: 9rem; padding: 1.5rem; border: 1px dashed #a8a8a3; border-radius: .25rem; display: flex; align-items: center; gap: 1rem; transition: border-color .15s; }
+.drop.active { border-color: #111; background: #fff; }
+.upload-icon { width: 1.75rem; flex: 0 0 1.75rem; }
+.file-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: .2rem; }
 #name { overflow-wrap: anywhere; }
-#status { min-height: 1.5rem; font-weight: 650; }
+.formats { color: #5e5e59; font-size: .8125rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.drop .actions { margin-left: auto; }
+button, .button { width: 100%; appearance: none; min-height: 44px; padding: .75rem 1.125rem; border: 1px solid #111; border-radius: .25rem; background: #111; color: #fff; font: inherit; font-size: .875rem; font-weight: 650; cursor: pointer; text-align: center; }
+button.secondary, .button.secondary { background: #fff; color: #111; }
+button:focus-visible, .button:focus-visible, .drop:focus-visible { outline: 3px solid #247a4a; outline-offset: 3px; }
+button:disabled { opacity: .4; cursor: wait; }
+input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+#preview { display: none; max-width: 100%; max-height: 40vh; margin-top: 1.25rem; border-radius: .25rem; object-fit: contain; }
+#uploadActions { justify-content: flex-end; margin-top: .75rem; }
+#status { min-height: 1.5rem; margin: .75rem 0 0; font-weight: 650; line-height: 1.5; }
 #saved { display: none; margin-top: 1rem; }
 #saved.visible { display: block; }
+#saved > label { display: block; margin-bottom: .4rem; font-size: .875rem; font-weight: 650; }
 .path { display: flex; gap: .5rem; align-items: center; }
-#savedPath { flex: 1; min-width: 0; padding: .8rem; border: 1px solid #64748b; border-radius: .7rem; font: inherit; }
-.success { color: #86efac; } .error { color: #fca5a5; }
-small { display: block; margin-top: 1rem; color: #94a3b8; }
+#savedPath { flex: 1; min-width: 0; min-height: 44px; padding: .75rem; border: 1px solid #a8a8a3; border-radius: .25rem; background: #fff; color: #111; font: inherit; }
+.success { color: #247a4a; } .error { color: #a51d2d; }
+footer { color: #5e5e59; font-size: .75rem; text-align: center; }
+@media (max-width: 40rem) {
+  body { padding-top: max(1.25rem, env(safe-area-inset-top)); }
+  .online { font-size: .75rem; }
+  main { padding: 3.5rem 0; }
+  .drop { align-items: flex-start; flex-wrap: wrap; }
+  .file-info { flex-basis: calc(100% - 2.75rem); }
+  .drop .actions { width: 100%; margin: .5rem 0 0; }
+  .drop .button { flex: 1; }
+}
 </style>
 </head>
 <body>
+<header>
+<div class="brand">RemoteShots</div>
+<div class="online">Listener online</div>
+</header>
 <main>
 <h1>Upload a screenshot</h1>
-<p>Choose a photo, take one with your camera, drop an image, or press <strong>⌘V</strong> to paste a screenshot.</p>
-<section id="drop" class="drop" tabindex="0" role="button" aria-label="Choose, paste, or drop an image here">
-<strong id="name">No image selected</strong>
-<img id="preview" alt="Selected image preview">
+<p class="intro">Originals are retained. latest.png updates automatically.</p>
+<section id="drop" class="drop" aria-labelledby="name" aria-describedby="dropFormats">
+<svg class="upload-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 19V5M14 5L9 10M14 5L19 10M5 18V23H23V18" stroke="currentColor" stroke-width="1.8"/></svg>
+<div class="file-info">
+<strong id="name">Drop an image here</strong>
+<span id="dropFormats" class="formats">PNG, JPEG, WebP, HEIF or AVIF</span>
+</div>
 <div class="actions">
-<label class="button" for="picker">Choose photo</label>
-<label class="button secondary" for="camera">Take photo</label>
+<label class="button" for="picker">Browse</label>
 </div>
 <input id="picker" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/avif">
-<input id="camera" type="file" accept="image/*" capture="environment">
 </section>
-<div class="actions"><button id="upload" disabled>Upload</button></div>
+<img id="preview" alt="Selected image preview">
+<div id="uploadActions" class="actions"><button id="upload" type="button" disabled>Upload</button></div>
 <p id="status" aria-live="polite"></p>
 <div id="saved">
 <label for="savedPath">Local path</label>
@@ -88,13 +114,12 @@ small { display: block; margin-top: 1rem; color: #94a3b8; }
 <button id="copyPath" type="button">Copy</button>
 </div>
 </div>
-<small>Maximum original size: 25 MiB. Originals are retained; latest.png is updated atomically.</small>
 </main>
+<footer>Maximum size 25 MiB · Stored with private permissions</footer>
 <script>
 const maxBytes = 25 * 1024 * 1024;
 const drop = document.querySelector('#drop');
 const picker = document.querySelector('#picker');
-const camera = document.querySelector('#camera');
 const upload = document.querySelector('#upload');
 const status = document.querySelector('#status');
 const nameEl = document.querySelector('#name');
@@ -113,7 +138,7 @@ function clearSelection() {
   selected = null;
   saved.classList.remove('visible');
   upload.disabled = true;
-  nameEl.textContent = 'No image selected';
+  nameEl.textContent = 'Drop an image here';
   preview.removeAttribute('src');
   preview.style.display = 'none';
   if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -139,9 +164,8 @@ function selectFile(file) {
   upload.disabled = false;
   setStatus('Ready to upload.');
 }
-[picker, camera].forEach(input => input.addEventListener('change', () => selectFile(input.files[0])));
+picker.addEventListener('change', () => selectFile(picker.files[0]));
 drop.addEventListener('click', event => { if (!event.target.closest('label')) picker.click(); });
-drop.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); picker.click(); } });
 ['dragenter', 'dragover'].forEach(type => drop.addEventListener(type, event => { event.preventDefault(); drop.classList.add('active'); }));
 ['dragleave', 'drop'].forEach(type => drop.addEventListener(type, event => { event.preventDefault(); drop.classList.remove('active'); }));
 drop.addEventListener('drop', event => selectFile(event.dataTransfer.files[0]));
