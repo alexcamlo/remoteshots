@@ -57,6 +57,10 @@ input[type=file] { position: absolute; width: 1px; height: 1px; overflow: hidden
 #preview { display: none; max-width: 100%; max-height: 45vh; margin: 1rem auto 0; border-radius: .7rem; object-fit: contain; }
 #name { overflow-wrap: anywhere; }
 #status { min-height: 1.5rem; font-weight: 650; }
+#saved { display: none; margin-top: 1rem; }
+#saved.visible { display: block; }
+.path { display: flex; gap: .5rem; align-items: center; }
+#savedPath { flex: 1; min-width: 0; padding: .8rem; border: 1px solid #64748b; border-radius: .7rem; font: inherit; }
 .success { color: #86efac; } .error { color: #fca5a5; }
 small { display: block; margin-top: 1rem; color: #94a3b8; }
 </style>
@@ -77,6 +81,13 @@ small { display: block; margin-top: 1rem; color: #94a3b8; }
 </section>
 <div class="actions"><button id="upload" disabled>Upload</button></div>
 <p id="status" aria-live="polite"></p>
+<div id="saved">
+<label for="savedPath">Local path</label>
+<div class="path">
+<input id="savedPath" readonly>
+<button id="copyPath" type="button">Copy</button>
+</div>
+</div>
 <small>Maximum original size: 25 MiB. Originals are retained; latest.png is updated atomically.</small>
 </main>
 <script>
@@ -88,6 +99,9 @@ const upload = document.querySelector('#upload');
 const status = document.querySelector('#status');
 const nameEl = document.querySelector('#name');
 const preview = document.querySelector('#preview');
+const saved = document.querySelector('#saved');
+const savedPath = document.querySelector('#savedPath');
+const copyPath = document.querySelector('#copyPath');
 let selected = null;
 let previewUrl = null;
 
@@ -97,6 +111,7 @@ function setStatus(message, kind = '') {
 }
 function clearSelection() {
   selected = null;
+  saved.classList.remove('visible');
   upload.disabled = true;
   nameEl.textContent = 'No image selected';
   preview.removeAttribute('src');
@@ -115,6 +130,7 @@ function selectFile(file) {
     setStatus('Please select an image file.', 'error'); return;
   }
   selected = file;
+  saved.classList.remove('visible');
   nameEl.textContent = `${file.name} (${(file.size / 1048576).toFixed(2)} MiB)`;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(file);
@@ -144,6 +160,16 @@ document.addEventListener('paste', event => {
   } else {
     setStatus('No image was found in the clipboard.', 'error');
   }
+});
+
+copyPath.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(savedPath.value);
+  } catch {
+    savedPath.select();
+    document.execCommand('copy');
+  }
+  setStatus('Path copied to clipboard.', 'success');
 });
 
 async function imageToPng(file) {
@@ -178,6 +204,8 @@ upload.addEventListener('click', async () => {
     const response = await fetch('upload', {method: 'POST', body: form, credentials: 'same-origin'});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `Upload failed (${response.status})`);
+    savedPath.value = result.original;
+    saved.classList.add('visible');
     setStatus(`Saved ${result.filename}`, 'success');
   } catch (error) {
     setStatus(error.message || 'Upload failed.', 'error');

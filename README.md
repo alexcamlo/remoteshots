@@ -47,12 +47,12 @@ ip -brief address
 Create the output directory and start the server, replacing the example address:
 
 ```bash
-install -d -m700 /tmp/remoteshots
+install -d -m700 "${XDG_RUNTIME_DIR}/remoteshots"
 
 ./server.py \
   --bind 192.168.1.50 \
   --port 8484 \
-  --output-dir /tmp/remoteshots
+  --output-dir "${XDG_RUNTIME_DIR}/remoteshots"
 ```
 
 Open:
@@ -65,7 +65,7 @@ The server rejects wildcard, loopback, and public bind addresses.
 
 ## Upload retention
 
-Uploads are written to `/tmp/remoteshots`. They are removed on reboot, and the enabled cleanup timer deletes files older than 30 days daily.
+Uploads are written to `$XDG_RUNTIME_DIR/remoteshots`. systemd creates the directory when the service starts, removes it on reboot, and the enabled cleanup timer deletes files older than 30 days daily.
 
 ## Install the systemd user service
 
@@ -78,10 +78,14 @@ install -Dm755 server.py \
 install -Dm644 remoteshots.service \
   ~/.config/systemd/user/remoteshots.service
 
+install -Dm644 remoteshots-cleanup.service remoteshots-cleanup.timer \
+  ~/.config/systemd/user/
+
+install -Dm644 remoteshots.tmpfiles \
+  ~/.config/user-tmpfiles.d/remoteshots.conf
+
 install -Dm600 remoteshots.env.example \
   ~/.config/remoteshots/environment
-
-install -d -m700 /tmp/remoteshots
 ```
 
 Edit the environment file and set an address assigned to the machine:

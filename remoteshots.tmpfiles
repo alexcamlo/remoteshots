@@ -1,2 +1,2 @@
 # Temporary RemoteShots uploads: clear files older than 30 days.
-d /tmp/remoteshots 0700 - - 30d
+d %t/remoteshots 0700 - - 30d
